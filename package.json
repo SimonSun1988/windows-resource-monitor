@@ -1,0 +1,42 @@
+{
+  "name": "windows-resource-monitor",
+  "version": "1.0.21",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "node scripts/increment-version.js && electron-builder",
+    "dist:mac": "electron-builder --mac"
+  },
+  "build": {
+    "appId": "com.resource.monitor",
+    "productName": "ResourceMonitor",
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "requestedExecutionLevel": "requireAdministrator"
+    },
+    "directories": {
+      "output": "dist"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^40.0.0",
+    "electron-builder": "^26.4.0"
+  },
+  "dependencies": {
+    "systeminformation": "^5.30.5"
+  }
+}

@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build Output
+dist/
+out/
+build/
+
+# OS Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Environment variables
+.env
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Electron-builder
+*.exe
+*.dmg
+*.zip
+*.app
