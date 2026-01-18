@@ -3,10 +3,10 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Platform](https://img.shields.io/badge/platform-Windows-0078D6.svg) ![Electron](https://img.shields.io/badge/built%20with-Electron-47848F.svg)
 
 **[English]**
-A beautiful, transparent desktop widget for monitoring system resources on Windows. Built with Electron, it provides real-time statistics for your CPU, RAM, and GPUs in a sleek, non-intrusive interface.
+A beautiful, transparent desktop widget for monitoring system resources on Windows. Built with Electron, it provides real-time statistics for your CPU, RAM, and GPUs in a sleek, non-intrusive interface with glassmorphism effects.
 
 **[繁體中文]**
-一個美觀、透明的 Windows 桌面資源監控小工具。使用 Electron 構建，以時尚且不干擾的介面提供 CPU、RAM 和顯示卡的即時狀態監控。
+一個美觀、透明的 Windows 桌面資源監控小工具。使用 Electron 構建，以時尚且不干擾的介面提供 CPU、RAM 和顯示卡 (GPU) 的即時狀態監控，並採用了現代化的毛玻璃特效設計。
 
 ---
 
@@ -36,14 +36,14 @@ A beautiful, transparent desktop widget for monitoring system resources on Windo
 
 ---
 
-## 🚀 Installation & Usage / 安裝與使用
+## 🚀 Installation / 安裝教學
 
-1.  Download the latest `.exe` from the [Releases](https://github.com/yourusername/windows-resource-monitor/releases) page.
+1.  Download the latest `.exe` from the **[Releases](https://github.com/SimonSun1988/windows-resource-monitor/releases)** page.
 2.  Run `ResourceMonitor Setup 1.0.X.exe`.
 3.  The widget will appear on your desktop.
-4.  **Right-click** on the tray icon to quit.
+4.  **Right-click** on the system tray icon to quit completely.
 
-1.  從 [Releases](https://github.com/yourusername/windows-resource-monitor/releases) 頁面下載最新的 `.exe` 檔。
+1.  從 **[Releases](https://github.com/SimonSun1988/windows-resource-monitor/releases)** 頁面下載最新的 `.exe` 檔。
 2.  執行 `ResourceMonitor Setup 1.0.X.exe`。
 3.  小工具將會出現在您的桌面上。
 4.  在右下角系統列圖示上**點擊右鍵**可完全關閉程式。
@@ -60,7 +60,7 @@ A beautiful, transparent desktop widget for monitoring system resources on Windo
 
 ```bash
 # Clone the repository / 複製專案
-git clone https://github.com/yourusername/windows-resource-monitor.git
+git clone https://github.com/SimonSun1988/windows-resource-monitor.git
 
 # Enter directory / 進入目錄
 cd windows-resource-monitor
@@ -77,9 +77,24 @@ npm run dist
 
 ---
 
-## ☕ Support & Donate / 贊助與支持
+## 💬 Feedback & Issues / 問題與建議
 
+**[English]**
+If you encounter any bugs, have feature requests, or want to give suggestions, please open an issue on GitHub. Your feedback is highly appreciated!
+*   **Create an Issue**: [https://github.com/SimonSun1988/windows-resource-monitor/issues](https://github.com/SimonSun1988/windows-resource-monitor/issues)
+
+**[繁體中文]**
+如果您在使用過程中遇到任何問題 (Bug)、想要建議新功能，或是對專案有任何想法，歡迎在 GitHub 上建立 Issue 告訴我。非常感謝您的回饋！
+*   **建立 Issue**: [https://github.com/SimonSun1988/windows-resource-monitor/issues](https://github.com/SimonSun1988/windows-resource-monitor/issues)
+
+---
+
+## ☕ Support / 贊助與支持
+
+**[English]**
 If you find this tool useful, consider buying me a coffee! Your support keeps the updates coming.
+
+**[繁體中文]**
 如果您覺得這個工具對您有幫助，歡迎贊助我喝杯咖啡！您的支持是我更新的最大動力。
 
 **USDT (TRC20)**:
@@ -91,4 +106,5 @@ TXgTPBAZHReyotf8tjUm31aJwqxjktnRFL
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
+專案代碼採用 MIT 授權條款開源。
