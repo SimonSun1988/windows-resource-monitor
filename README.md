@@ -2,6 +2,8 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Platform](https://img.shields.io/badge/platform-Windows-0078D6.svg) ![Electron](https://img.shields.io/badge/built%20with-Electron-47848F.svg)
 
+![Widget Screenshot](assets/screenshot.png)
+
 **[English]**
 A beautiful, transparent desktop widget for monitoring system resources on Windows. Built with Electron, it provides real-time statistics for your CPU, RAM, and GPUs in a sleek, non-intrusive interface with glassmorphism effects.
 
