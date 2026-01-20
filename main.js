@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, screen, Tray, Menu } = require('electron');
 const path = require('path');
 const si = require('systeminformation');
+const util = require('util');
 
 let mainWindow;
 let tray = null;
@@ -11,7 +12,7 @@ function createWindow() {
 
   mainWindow = new BrowserWindow({
     width: 300,
-    height: 450,
+    height: 650,
     x: width - 320,
     y: 50,
     frame: false,
@@ -19,7 +20,7 @@ function createWindow() {
     alwaysOnTop: false,
     resizable: true,
     minWidth: 300,
-    minHeight: 450,
+    minHeight: 650,
     skipTaskbar: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -68,6 +69,10 @@ function createTray() {
   tray.on('double-click', () => {
     mainWindow.show();
   });
+
+  tray.on('click', () => {
+    mainWindow.show();
+  });
 }
 
 app.whenReady().then(() => {
@@ -99,17 +104,57 @@ app.on('window-all-closed', () => {
 // ... IPC Handlers for System Info (Keep get-static-data and get-dynamic-data as is) ...
 
 // IPC: Startup Settings
-ipcMain.handle('get-startup-setting', () => {
-  const settings = app.getLoginItemSettings();
-  return settings.openAtLogin;
+const exec = util.promisify(require('child_process').exec);
+const TASK_NAME = 'WindowsResourceMonitorAutoStart';
+
+ipcMain.handle('get-startup-setting', async () => {
+  if (process.platform === 'win32') {
+    try {
+      // Check if our specific task exists
+      await exec(`schtasks /Query /TN "${TASK_NAME}"`);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  } else {
+    // macOS / Linux fallback
+    const settings = app.getLoginItemSettings();
+    return settings.openAtLogin;
+  }
 });
 
-ipcMain.handle('toggle-startup', (event, enable) => {
-  app.setLoginItemSettings({
-    openAtLogin: enable,
-    path: app.getPath('exe') // Optional but good for reliability
-  });
-  return enable;
+ipcMain.handle('toggle-startup', async (event, enable) => {
+  if (process.platform === 'win32') {
+    // CRITICAL FIX: For portable apps, app.getPath('exe') points to a temp dir that vanishes on reboot.
+    // We must use the original executable location if available.
+    const exePath = process.env.PORTABLE_EXECUTABLE_FILE || app.getPath('exe');
+
+    try {
+      if (enable) {
+        // Create Task
+        // /SC ONLOGON: Run at user logon
+        // /RL HIGHEST: Run with highest privileges (Admin)
+        // /F: Force overwrite
+        // /TR: Task Run path (quoted for spaces)
+        const command = `schtasks /Create /TN "${TASK_NAME}" /TR "\\"${exePath}\\"" /SC ONLOGON /RL HIGHEST /F`;
+        await exec(command);
+      } else {
+        // Delete Task
+        await exec(`schtasks /Delete /TN "${TASK_NAME}" /F`);
+      }
+      return enable;
+    } catch (e) {
+      console.error('Failed to toggle startup task:', e);
+      return !enable; // Revert UI check state on error
+    }
+  } else {
+    // macOS / Linux fallback
+    app.setLoginItemSettings({
+      openAtLogin: enable,
+      path: app.getPath('exe')
+    });
+    return enable;
+  }
 });
 
 // IPC: Close App (Now just hides to tray unless fully quitting)
@@ -167,7 +212,7 @@ ipcMain.on('start-resizing', (event) => {
     const cursor = screen.getCursorScreenPoint();
     const bounds = win.getBounds();
     // const minSize = win.getMinimumSize(); // BUG: Returns current size on some transparent windows
-    const minSize = [300, 450]; // Hardcoded safety limits
+    const minSize = [300, 650]; // Hardcoded safety limits
 
     // Explicitly ignore what the window thinks its minimum is
     const newWidth = Math.max(minSize[0], Math.round(cursor.x - bounds.x));
@@ -207,25 +252,54 @@ ipcMain.handle('get-static-data', async () => {
       si.graphics()
     ]);
 
-    // Filter GPUs: Remove 'Microsoft Basic Display Adapter' if others exist.
-    // We want to support both NVIDIA and AMD.
-    // Usually we want typical discrete cards or integrated if that's all there is.
+    // Clean CPU Name
+    let cpuName = `${cpu.manufacturer} ${cpu.brand}`
+      .replace(/Intel|AMD/gi, '')
+      .replace(/\(R\)/gi, '')
+      .replace(/\(TM\)/gi, '')
+      .replace(/Core/gi, '')
+      .replace(/Processor/gi, '')
+      .replace(/CPU/gi, '')
+      .trim();
+    cpuName = cpuName.replace(/\s+/g, ' '); // Remove extra spaces
+
+    // Filter GPUs
     let controllers = graphics.controllers.filter(c =>
       !c.model.toLowerCase().includes('microsoft basic')
     );
-
-    // If empty (fallback), use original
     if (controllers.length === 0) controllers = graphics.controllers;
 
-    const gpus = controllers.map((g, index) => ({
-      id: index,
-      model: g.model,
-      vendor: g.vendor,
-      vram: g.memoryTotal
-    }));
+    const gpus = controllers.map((g, index) => {
+      // Clean GPU Model Name
+      let modelName = g.model
+        .replace(/NVIDIA|AMD|Intel/gi, '')
+        .replace(/\(R\)/gi, '')
+        .replace(/\(TM\)/gi, '')
+        .replace(/Corporation|Inc\.|Co\.|Ltd\./gi, '')
+        .replace(/ASUS|Gigabyte|MSI|Micro-Star|EVGA|Zotac|Palit|Galax|PNY|Colorful|Inno3D/gi, '')
+        .replace(/GeForce|Radeon|Arc|Graphics/gi, '')
+        .trim();
+
+      // Re-insert prefix for clarity
+      const original = g.model.toLowerCase();
+      if (original.includes('rtx')) modelName = 'RTX ' + modelName.replace(/RTX/i, '').trim();
+      else if (original.includes('gtx')) modelName = 'GTX ' + modelName.replace(/GTX/i, '').trim();
+      else if (original.includes('rx')) modelName = 'RX ' + modelName.replace(/RX/i, '').trim();
+
+      modelName = modelName.replace(/\s+/g, ' ').trim();
+      if (modelName.length < 3) modelName = g.model.replace(/\(R\)|\(TM\)/gi, '').trim();
+
+      return {
+        id: index,
+        model: g.model, // Keep original for reference
+        name: modelName, // Clean name for display
+        vendor: g.vendor,
+        vram: g.memoryTotal
+      };
+    });
 
     return {
-      cpuModel: `${cpu.manufacturer} ${cpu.brand}`,
+      cpuModel: cpuName,
       cpuCores: cpu.physicalCores,
       memTotal: mem.total,
       gpus: gpus
@@ -237,20 +311,18 @@ ipcMain.handle('get-static-data', async () => {
 });
 
 // 2. Get Dynamic Data (Run on interval)
-// 2. Get Dynamic Data (Run on interval)
 ipcMain.handle('get-dynamic-data', async () => {
   try {
     // Optimization: Run si calls and nvidia-smi in parallel
-    // Also, use promisified exec to avoid blocking the event loop
-    const util = require('util');
-    const exec = util.promisify(require('child_process').exec);
+    // Uses the global 'exec' (promisified) defined at top level
 
     // Commands to run in parallel
     const siPromises = [
       si.currentLoad(),
       si.cpuTemperature(),
       si.mem(),
-      si.graphics() // We still need this for AMD/Intel or if nvidia-smi fails
+      si.graphics(),
+      si.fsSize()
     ];
 
     // Function to fetch NVIDIA stats asynchronously
@@ -264,11 +336,13 @@ ipcMain.handle('get-dynamic-data', async () => {
       }
     };
 
+    // ... rest of logic remains the same ...
     const [
       cpuLoad,
       temp,
       mem,
       graphics,
+      fsSize,
       nvidiaOutput
     ] = await Promise.all([
       ...siPromises,
@@ -277,8 +351,6 @@ ipcMain.handle('get-dynamic-data', async () => {
 
     // GPU Handling logic
     let gpus = [];
-
-    // Strategy A: systeminformation (si) Baseline
     let controllers = graphics.controllers.filter(c =>
       !c.model.toLowerCase().includes('microsoft basic')
     );
@@ -325,14 +397,11 @@ ipcMain.handle('get-dynamic-data', async () => {
       cpuLoad: cpuLoad.currentLoad,
       cpuTemp: temp.main || temp.cores[0] || 0,
       memUsed: mem.used,
-      gpus: gpus
+      gpus: gpus,
+      disks: fsSize
     };
   } catch (error) {
     console.error("Error fetching dynamic stats:", error);
     return null;
   }
-});
-
-ipcMain.on('close-app', () => {
-  app.quit();
 });

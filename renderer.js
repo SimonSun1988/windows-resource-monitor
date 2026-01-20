@@ -99,21 +99,8 @@ async function init() {
   staticData = await window.api.getStaticData();
 
   if (staticData) {
-    // Set static text
-    // Fix: Regex was too aggressive (matching 'R' inside 'Ultra'). 
-    // We want to remove "Intel", "AMD", "Core", "Processor" and garbage like (R), (TM).
-    let cpuName = staticData.cpuModel
-      .replace(/Intel|AMD/gi, '')
-      .replace(/\(R\)/gi, '')
-      .replace(/\(TM\)/gi, '')
-      .replace(/Core/gi, '')
-      .replace(/Processor/gi, '')
-      .replace(/CPU/gi, '')
-      .trim();
-
-    // Remove extra spaces
-    cpuName = cpuName.replace(/\s+/g, ' ');
-    document.getElementById('cpu-model').innerText = cpuName.substring(0, 20); // Longer limit
+    // Set static text (Data is already cleaned by Main process)
+    document.getElementById('cpu-model').innerText = staticData.cpuModel.substring(0, 20);
 
     // Create GPU Cards
     gpuWrapper.innerHTML = ''; // Clear
@@ -146,30 +133,6 @@ async function init() {
 
       if (vendorClass) card.setAttribute('data-vendor', vendorClass);
 
-      // Clean GPU Model Name
-      // Example: "NVIDIA GeForce RTX 5080" -> "GeForce RTX 5080" or just "RTX 5080"
-      // Example: "ASUS TUF Gaming GeForce RTX 4090" -> "RTX 4090"
-      let modelName = gpu.model
-        .replace(/NVIDIA|AMD|Intel/gi, '')
-        .replace(/\(R\)/gi, '')
-        .replace(/\(TM\)/gi, '')
-        .replace(/Corporation|Inc\.|Co\.|Ltd\./gi, '')
-        .replace(/ASUS|Gigabyte|MSI|Micro-Star|EVGA|Zotac|Palit|Galax|PNY|Colorful|Inno3D/gi, '') // Remove AIB Brands
-        .replace(/GeForce|Radeon|Arc|Graphics/gi, '') // Optional: Remove generic prefixes if you want JUST model
-        .trim();
-
-      // Re-insert prefix if the result is too bare but we know the family
-      const original = gpu.model.toLowerCase();
-      if (original.includes('rtx')) modelName = 'RTX ' + modelName.replace(/RTX/i, '').trim();
-      else if (original.includes('gtx')) modelName = 'GTX ' + modelName.replace(/GTX/i, '').trim();
-      else if (original.includes('rx')) modelName = 'RX ' + modelName.replace(/RX/i, '').trim();
-
-      // Clean up multiple spaces
-      modelName = modelName.replace(/\s+/g, ' ').trim();
-
-      // If result is empty or weird (like just "Graphics"), keep original or fallback
-      if (modelName.length < 3) modelName = gpu.model.replace(/\(R\)|\(TM\)/gi, '').trim();
-
       card.innerHTML = `
         <div class="card-header">
            <div class="card-header-left">
@@ -182,7 +145,7 @@ async function init() {
           <div class="bar-fill" id="gpu-bar-${index}"></div>
         </div>
         <div class="sub-stat">
-          <span title="${gpu.model}">${modelName}</span>
+          <span title="${gpu.model}">${gpu.name}</span>
           <span class="sub-value" id="gpu-temp-${index}">--°C</span>
         </div>
       `;
@@ -246,9 +209,67 @@ function updateStats() {
       });
     }
 
+    // Disks
+    const diskWrapper = document.getElementById('disk-wrapper');
+    if (stats.disks && stats.disks.length > 0) {
+      // Filter out small partitions/system reserved (e.g. < 1GB) or network drives if unwanted
+      // Typically show main fixed drives.
+      // si.fsSize returns array.
+      const validDisks = stats.disks.filter(d => d.size > 1024 * 1024 * 1024); // > 1GB
+
+      validDisks.forEach((disk, index) => {
+        let card = document.getElementById(`disk-card-${index}`);
+        if (!card) {
+          card = document.createElement('div');
+          card.className = 'card disk-card';
+          card.id = `disk-card-${index}`;
+          card.innerHTML = `
+             <div class="card-header">
+               <div class="card-header-left">
+                 <svg class="icon" viewBox="0 0 24 24"><path d="M6,2H18A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2M6,4V11H18V4H6M6,13V20H18V13H6M8,6H10V8H8V6M8,15H10V17H8V15Z" /></svg>
+                 <span class="label">DISK (${disk.fs})</span>
+               </div>
+               <span class="value" id="disk-use-${index}">0%</span>
+             </div>
+             <div class="bar-container">
+               <div class="bar-fill" id="disk-bar-${index}"></div>
+             </div>
+             <div class="sub-stat">
+               <span id="disk-name-${index}">Used: ${formatBytes(disk.used)}</span>
+               <span class="sub-value" id="disk-total-${index}">Total: ${formatBytes(disk.size)}</span>
+             </div>
+          `;
+          diskWrapper.appendChild(card);
+        }
+
+        // Update
+        const useEl = document.getElementById(`disk-use-${index}`);
+        const barEl = document.getElementById(`disk-bar-${index}`);
+        const usedEl = document.getElementById(`disk-name-${index}`);
+        const totalEl = document.getElementById(`disk-total-${index}`);
+
+        if (useEl && barEl) {
+          const use = Math.round(disk.use);
+          useEl.innerText = `${use}%`;
+          barEl.style.width = `${use}%`;
+          if (usedEl) usedEl.innerText = `Used: ${formatBytes(disk.used)}`;
+          // Total usually doesn't change
+        }
+      });
+    }
+
   }).catch(err => {
     console.error(err);
   });
+}
+
+function formatBytes(bytes, decimals = 1) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
 init();

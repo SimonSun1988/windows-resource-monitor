@@ -1,6 +1,6 @@
 {
   "name": "windows-resource-monitor",
-  "version": "1.0.21",
+  "version": "1.0.28",
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -14,6 +14,13 @@
     "win": {
       "target": [
         {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        },
+        {
           "target": "portable",
           "arch": [
             "x64",
@@ -23,6 +30,13 @@
       ],
       "icon": "assets/icon.png",
       "requestedExecutionLevel": "requireAdministrator"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     },
     "directories": {
       "output": "dist"

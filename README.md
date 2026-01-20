@@ -11,11 +11,28 @@ A beautiful, transparent desktop widget for monitoring system resources on Windo
 一個美觀、透明的 Windows 桌面資源監控小工具。使用 Electron 構建，以時尚且不干擾的介面提供 CPU、RAM 和顯示卡 (GPU) 的即時狀態監控，並採用了現代化的毛玻璃特效設計。
 
 ---
+## 📅 Changelog (v1.0.28) / 更新日誌
+
+### 🇬🇧 English
+*   **New Feature**: **Disk Monitoring** added! Now tracks Hard Drive usage.
+*   **New Feature**: **Seamless "Run on Startup"**. Uses Windows Task Scheduler to bypass UAC prompts on boot.
+*   **Enhancement**: App now forces **Administrator Privileges** to ensure accurate hardware readings.
+*   **Enhancement**: **Portable Mode Support**. "Run on Startup" now works perfectly even with the portable `.exe` version.
+*   **UI Update**: Increased default window height to accommodate new stats. New purple theme for Disk cards.
+
+### 🇹🇼 繁體中文
+*   **新功能**：新增 **硬碟監控 (Disk Monitoring)**！現在可以查看硬碟使用量與剩餘空間。
+*   **新功能**：**無感開機自動啟動**。改用 Windows 工作排程器技術，開機時自動以管理員身分執行，且**不會跳出 UAC 詢問視窗**。
+*   **改進**：強制程式以 **系統管理員身分** 執行，確保能讀取到最完整的硬體資訊。
+*   **改進**：**支援免安裝版 (Portable)** 開機啟動。現在即使是單一執行檔版本，也能正常設定開機自動執行。
+*   **介面更新**：增加預設視窗高度以容納新資訊，並為硬碟區塊採用了全新的紫色系設計。
+
+---
 
 ## ✨ Features / 功能特色
 
 ### 🇬🇧 English
-*   **Real-time Monitoring**: Track CPU usage, Temperature, RAM usage, and GPU stats (Load, Temp, Memory).
+*   **Real-time Monitoring**: Track CPU usage, Temperature, RAM usage, Hard Drive, and GPU stats (Load, Temp, Memory).
 *   **Modern Design**: Glassmorphism effect with adjustable opacity to blend perfectly with your desktop.
 *   **Fully Customizable**: 
     *   **Resize**: Drag the bottom-right corner to resize (Min: 300x450).
@@ -26,7 +43,7 @@ A beautiful, transparent desktop widget for monitoring system resources on Windo
 *   **Debug Mode**: Integrated debug panel for troubleshooting.
 
 ### 🇹🇼 繁體中文
-*   **即時監控**：追蹤 CPU 使用率、溫度、記憶體 (RAM) 使用量以及顯示卡 (GPU) 狀態（負載、溫度、顯存）。
+*   **即時監控**：追蹤 CPU 使用率、溫度、記憶體 (RAM)、硬碟 (Disk) 使用量以及顯示卡 (GPU) 狀態（負載、溫度、顯存）。
 *   **現代化設計**：毛玻璃特效 (Glassmorphism)，並可調整透明度，完美融入您的桌面背景。
 *   **高度客製化**：
     *   **調整大小**：拖曳右下角即可調整視窗大小 (最小限制: 300x450)。
@@ -41,12 +58,12 @@ A beautiful, transparent desktop widget for monitoring system resources on Windo
 ## 🚀 Installation / 安裝教學
 
 1.  Download the latest `.exe` from the **[Releases](https://github.com/SimonSun1988/windows-resource-monitor/releases)** page.
-2.  Run `ResourceMonitor Setup 1.0.X.exe`.
+2.  Run `ResourceMonitor Setup 1.0.28.exe`.
 3.  The widget will appear on your desktop.
 4.  **Right-click** on the system tray icon to quit completely.
 
 1.  從 **[Releases](https://github.com/SimonSun1988/windows-resource-monitor/releases)** 頁面下載最新的 `.exe` 檔。
-2.  執行 `ResourceMonitor Setup 1.0.X.exe`。
+2.  執行 `ResourceMonitor Setup 1.0.28.exe`。
 3.  小工具將會出現在您的桌面上。
 4.  在右下角系統列圖示上**點擊右鍵**可完全關閉程式。
 
