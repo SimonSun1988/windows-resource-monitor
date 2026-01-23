@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::process::Command;
 use sysinfo::{Components, Disks, System};
 use tauri::Manager;
@@ -168,7 +168,7 @@ fn get_static_data() -> StaticData {
     // In sysinfo 0.30, refresh calls are specific
     // We create a system and refresh specific parts
     let mut sys = System::new_all();
-    sys.refresh_cpu_all(); 
+    sys.refresh_cpu(); 
     sys.refresh_memory();
 
     let cpu_global = sys.global_cpu_info();
@@ -209,7 +209,7 @@ fn get_static_data() -> StaticData {
 #[tauri::command]
 fn get_dynamic_data() -> DynamicData {
     let mut sys = System::new_all();
-    sys.refresh_cpu_all();
+    sys.refresh_cpu();
     sys.refresh_memory();
     
     // Components (Temp) handling in sysinfo 0.30
@@ -261,7 +261,6 @@ fn get_dynamic_data() -> DynamicData {
     let mut dynamic_gpus = Vec::new();
     
     if let Some(stats) = nvidia_stats {
-        #[cfg(target_os = "windows")]
         let output = Command::new("nvidia-smi")
         .args(&[
             "--query-gpu=name,utilization.gpu,temperature.gpu,memory.used",
