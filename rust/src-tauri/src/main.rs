@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use sysinfo::{CpuExt, DiskExt, System, SystemExt};
+use sysinfo::{Components, Disks, System};
 use tauri::Manager;
 
 // Data Structures
@@ -165,23 +165,12 @@ fn get_nvidia_stats() -> Option<Vec<(usize, f32, f32, u64)>> {
 
 #[tauri::command]
 fn get_static_data() -> StaticData {
+    // In sysinfo 0.30, refresh calls are specific
+    // We create a system and refresh specific parts
     let mut sys = System::new_all();
-    sys.refresh_cpu();
+    sys.refresh_cpu_all(); 
     sys.refresh_memory();
-    // sysinfo gpu support is experimental/partial, but we try usage
-    // For static data we just want names.
-    // sysinfo might not enumerate GPUs perfectly on all systems yet, but let's try.
-    // Wait, sysinfo doesn't have a direct 'graphics()' equivalent like systeminformation node package.
-    // We might need to rely on nvidia-smi for NVIDIA or just return empty/placeholder if not found.
-    // Or we can just use a generic list if sysinfo doesn't provide it.
-    // Actually sysinfo has components. 
-    // Let's check `sysinfo` documentation knowledge... `sysinfo::SystemExt` has no graphics.
-    // We might need to skip GPU static enumeration or use a crate `wmi` on Windows.
-    // For now, to keep it simple and portable-ish code (compilable), let's assume we use what we can get
-    // from nvidia-smi if available, or just empty list for now.
-    // BUT the user wants a rewrite. 
-    // Since I cannot easily add complex crates without risk, I will try to implement basic detection via nvidia-smi.
-    
+
     let cpu_global = sys.global_cpu_info();
     let cpu_brand = cpu_global.brand();
     let cpu_name = clean_cpu_name(cpu_brand);
@@ -193,7 +182,7 @@ fn get_static_data() -> StaticData {
     if let Ok(output) = Command::new("nvidia-smi").arg("-L").output() {
         let s = String::from_utf8_lossy(&output.stdout);
         // GPU 0: NVIDIA GeForce RTX 3080 (UUID: GPU-...)
-        for (i, line) in s.lines().enumerate() {
+        for (_i, line) in s.lines().enumerate() {
             if let Some(idx) = line.find(": ") {
                  if let Some(end) = line.find(" (UUID") {
                      let name_raw = &line[idx+2..end];
@@ -202,17 +191,13 @@ fn get_static_data() -> StaticData {
                          model: name_raw.to_string(),
                          name: name_clean,
                          vendor: "NVIDIA".to_string(),
-                         vram: 0 // Hard to get total VRAM from -L, maybe query
+                         vram: 0 
                      });
                  }
             }
         }
     }
 
-    // If empty, maybe add a dummy or try WMI later? 
-    // The node app used `systeminformation` which uses WMI on Windows.
-    // For now, if we found nothing, we just return empty.
-    
     StaticData {
         cpuModel: cpu_name,
         cpuCores: sys.physical_core_count().unwrap_or(1),
@@ -224,17 +209,20 @@ fn get_static_data() -> StaticData {
 #[tauri::command]
 fn get_dynamic_data() -> DynamicData {
     let mut sys = System::new_all();
-    sys.refresh_cpu();
+    sys.refresh_cpu_all();
     sys.refresh_memory();
-    sys.refresh_components();
-    sys.refresh_disks();
-    sys.refresh_disks_list();
+    
+    // Components (Temp) handling in sysinfo 0.30
+    let components = Components::new_with_refreshed_list();
+    
+    // Disks handling in sysinfo 0.30
+    let disks_list = Disks::new_with_refreshed_list();
     
     let cpu_load = sys.global_cpu_info().cpu_usage();
     
     // CPU Temp
     let mut cpu_temp = 0.0;
-    for component in sys.components() {
+    for component in &components {
         // Simple heuristic for CPU temp
         let label = component.label().to_lowercase();
         if label.contains("cpu") || label.contains("package") || label.contains("core") {
@@ -249,8 +237,8 @@ fn get_dynamic_data() -> DynamicData {
     
     // Disk Stats
     let mut disks = Vec::new();
-    for disk in sys.disks() {
-         // Filter small disks (similar to logic in JS > 1GB)
+    for disk in &disks_list {
+         // Filter small disks 
          if disk.total_space() > 1024 * 1024 * 1024 {
              let used = disk.total_space() - disk.available_space();
              let use_percent = if disk.total_space() > 0 {
@@ -273,21 +261,6 @@ fn get_dynamic_data() -> DynamicData {
     let mut dynamic_gpus = Vec::new();
     
     if let Some(stats) = nvidia_stats {
-        // Reuse the static list concept... or just trust the indices from nvidia-smi match what we displayed?
-        // Since we only really populated static list from nvidia-smi -L, indices should match.
-        // But we need to pass back data that matches the frontend's expectation.
-        // Frontend expects an array of gpu objects.
-        
-        // We will just return what nvidia-smi gave us.
-        // BUT we need the model name again if we want to be fully stateless?
-        // Actually the `get_dynamic_data` in JS returns `model`.
-        // We should try to be consistent.
-        // Since we are re-running this every second, let's keep it light.
-        // We will assume the frontend uses index or we just provide model name "NVIDIA GPU".
-        // To be correct, we should probably fetch model names again or cache them.
-        // For simplicity in this script, I will just say "NVIDIA GPU" for model or try to fetch if cheap.
-        // `nvidia-smi` query can include name.
-        
         #[cfg(target_os = "windows")]
         let output = Command::new("nvidia-smi")
         .args(&[
@@ -387,7 +360,7 @@ fn close_app(app_handle: tauri::AppHandle) {
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{TrayIconBuilder, TrayIconEvent},
-    Manager, WindowEvent,
+    WindowEvent,
 };
 
 fn main() {
