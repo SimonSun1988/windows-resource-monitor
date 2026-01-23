@@ -1,0 +1,461 @@
+:root {
+  --bg-color: rgba(20, 20, 25, 0.90);
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --text-main: #ffffff;
+  --text-muted: #8888aa;
+  --cpu-color: #ff3e3e;
+  /* Red-ish */
+  --ram-color: #3eff68;
+  /* Green-ish */
+  --gpu-color: #3e88ff;
+  /* Blue-ish */
+  --disk-color: #d83eff;
+  /* Purple-ish */
+  --font-family: 'Outfit', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  /* No text selection in widget */
+}
+
+body {
+  font-family: var(--font-family);
+  background: transparent;
+  color: var(--text-main);
+  overflow: hidden;
+  /* Hide scrollbars */
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-color);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  -webkit-app-region: drag;
+  /* Allow dragging from anywhere */
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  -webkit-app-region: drag;
+  /* Allows dragging the window */
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  -webkit-app-region: no-drag;
+}
+
+/* Startup Toggle Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+  margin-right: 5px;
+  -webkit-app-region: no-drag;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.2);
+  transition: .4s;
+  border-radius: 18px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 3px;
+  bottom: 3px;
+  background-color: rgba(255, 255, 255, 0.6);
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked+.slider {
+  background-color: var(--gpu-color);
+  box-shadow: 0 0 8px rgba(62, 136, 255, 0.4);
+}
+
+input:checked+.slider:before {
+  background-color: #fff;
+  transform: translateX(14px);
+}
+
+.slider:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+input:checked+.slider:hover {
+  background-color: var(--gpu-color);
+  opacity: 0.9;
+}
+
+.title {
+  font-size: 0.8rem;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.close-btn {
+  -webkit-app-region: no-drag;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+/* Opacity Slider styling */
+#opacitySlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 60px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  outline: none;
+}
+
+#opacitySlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#opacitySlider:hover::-webkit-slider-thumb {
+  background: #fff;
+}
+
+/* Grid & Responsiveness */
+.stats-grid {
+  display: flex;
+  flex-direction: column;
+  /* Default to column for narrow view */
+  gap: 12px;
+  flex: 1;
+}
+
+/* If window is wider than 400px, switch to 2 columns if space permits or just expand */
+@media (min-width: 350px) {
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+}
+
+.gpu-wrapper {
+  display: contents;
+  /* Allows children to be part of the parent grid */
+}
+
+/* High Contrast Mode (Automatically applied when opacity is low) */
+body.high-contrast {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 5px rgba(0, 0, 0, 0.8);
+}
+
+body.high-contrast .label,
+body.high-contrast .value,
+body.high-contrast .close-btn,
+body.high-contrast .title,
+body.high-contrast .sub-stat,
+body.high-contrast .sub-value {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+body.high-contrast .card {
+  background: rgba(0, 0, 0, 0.4);
+  /* Ensure cards have some contrast background even if main bg is clear */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Cards */
+.card {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s;
+  min-width: 0;
+  /* Prevent flex items from overflowing */
+}
+
+.card:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-main);
+}
+
+.value {
+  font-weight: 300;
+  font-size: 1rem;
+  font-feature-settings: "tnum";
+}
+
+.bar-container {
+  height: 6px;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  transition: width 0.5s cubic-bezier(0.4, 0.0, 0.2, 1), background-color 0.3s;
+}
+
+.sub-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.sub-value {
+  color: #ddd;
+}
+
+/* Specific Colors & Brand Identities */
+.cpu-card .label {
+  color: var(--cpu-color);
+}
+
+.cpu-card .bar-fill {
+  background: linear-gradient(90deg, var(--cpu-color), #ff6b6b);
+  box-shadow: 0 0 8px var(--cpu-color);
+}
+
+.ram-card .label {
+  color: var(--ram-color);
+}
+
+.ram-card .bar-fill {
+  background: linear-gradient(90deg, var(--ram-color), #6bff8e);
+  box-shadow: 0 0 8px var(--ram-color);
+}
+
+/* GPU Vendor Colors */
+.gpu-card[data-vendor="nvidia"] .label {
+  color: #76b900;
+}
+
+.gpu-card[data-vendor="nvidia"] .bar-fill {
+  background: linear-gradient(90deg, #76b900, #a0db25);
+  box-shadow: 0 0 8px #76b900;
+}
+
+.gpu-card[data-vendor="amd"] .label {
+  color: #ed1c24;
+}
+
+.gpu-card[data-vendor="amd"] .bar-fill {
+  background: linear-gradient(90deg, #ed1c24, #ff5c5c);
+  box-shadow: 0 0 8px #ed1c24;
+}
+
+.gpu-card[data-vendor="intel"] .label {
+  color: #0071C5;
+}
+
+.gpu-card[data-vendor="intel"] .bar-fill {
+  background: linear-gradient(90deg, #0071C5, #00C7FD);
+  box-shadow: 0 0 8px #0071C5;
+}
+
+/* Default GPU if unknown */
+.gpu-card .label {
+  color: var(--gpu-color);
+}
+
+.gpu-card .bar-fill {
+  background: linear-gradient(90deg, var(--gpu-color), #6b9eff);
+  box-shadow: 0 0 8px var(--gpu-color);
+}
+
+/* Icons */
+.icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  fill: currentColor;
+  opacity: 0.8;
+}
+
+.card-header-left {
+  display: flex;
+  align-items: center;
+}
+
+/* Pulse Animation for high load > 80% (Handled via JS class maybe or just simple keyframe if always on) */
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 62, 62, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 62, 62, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 62, 62, 0);
+  }
+}
+
+.critical .bar-fill {
+  animation: pulse-red 2s infinite;
+  background: #ff3e3e !important;
+}
+
+/* Disk Colors */
+.disk-card .label {
+  color: var(--disk-color);
+}
+
+.disk-card .bar-fill {
+  background: linear-gradient(90deg, var(--disk-color), #f08aff);
+  box-shadow: 0 0 8px var(--disk-color);
+}
+
+/* Resize Handle - Made larger for easier interaction */
+.resize-handle {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  width: 25px;
+  height: 25px;
+  cursor: se-resize;
+  background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.5) 50%);
+  border-bottom-right-radius: 12px;
+  z-index: 10000;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
+}
+
+/* Improve handle visibility on hover */
+.resize-handle:hover {
+  background: linear-gradient(135deg, transparent 50%, rgba(0, 255, 255, 0.8) 50%);
+}
+
+/* Debug Panel - positioned to NOT block resize handle */
+/* Debug Panel - positioned to NOT block resize handle */
+.debug-panel {
+  display: none;
+  /* Hidden by default */
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: auto;
+  min-width: 200px;
+  max-width: calc(100% - 40px);
+  /* Responsive: Full width minus margins */
+  height: 200px;
+  background: rgba(0, 0, 0, 0.95);
+  color: #0f0;
+  font-family: monospace;
+  font-size: 11px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  overflow-y: auto;
+  z-index: 8000;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
+}
+
+/* Debug Icon Hover */
+#debugToggle:hover {
+  opacity: 1 !important;
+}
+
+#debugToggle:hover svg {
+  fill: #fff !important;
+}
+
+.debug-visible #debugToggle {
+  opacity: 1 !important;
+}
+
+.debug-visible #debugToggle svg {
+  fill: #0f0 !important;
+}
+
+.debug-title {
+  color: #ff0;
+  font-weight: bold;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 6px;
+  font-size: 12px;
+}
+
+#debug-content {
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.4;
+}

@@ -1,0 +1,51 @@
+name: Build Windows
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Install dependencies (Frontend)
+        working-directory: ./rust
+        run: npm install
+
+      - name: Build App
+        working-directory: ./rust
+        run: npm run tauri build
+
+      - name: Prepare Artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "artifacts"
+          
+          # 1. Copy Installer (Setup.exe)
+          # Tauri 2 usually outputs to rust/src-tauri/target/release/bundle/nsis/
+          # Filename might depend on productName but let glob find it
+          Copy-Item "rust/src-tauri/target/release/bundle/nsis/*.exe" -Destination "artifacts/"
+          
+          # 2. Copy Portable Executable (Raw .exe)
+          # It should be located in rust/src-tauri/target/release/windows-resource-monitor.exe
+          Copy-Item "rust/src-tauri/target/release/windows-resource-monitor.exe" -Destination "artifacts/WindowsResourceMonitor-Portable.exe"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-Builds
+          path: artifacts/*
